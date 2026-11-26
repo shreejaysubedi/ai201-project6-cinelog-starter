@@ -45,11 +45,30 @@ a database error or an unrelated exception as a passing result.
 
 ## Comment 4 — Default visibility
 
-**My position:** Pending.
+**My position:** Default new entries to `public=False`, and allow callers to
+opt in with `public=True` when saving a film.
 
-**Reasoning:** Pending.
+**Reasoning:** CineLog separates films someone has watched and logged from
+films they merely want to watch. Saving an unfamiliar film for later should
+not imply that the user recommends it or wants to announce that interest to
+the community. This starter has no onboarding flow that asks for a sharing
+preference, so inheriting `public=True` would make that choice silently.
+The explicit per-entry parameter lets someone share selected recommendations
+without applying that assumption to every saved title. The model default
+and service default both use `False`, so direct service and model callers
+agree with the HTTP endpoint.
 
-**Tradeoff acknowledged:** Pending.
+**Tradeoff acknowledged:** Public-by-default would help CineLog's community
+discovery: more lists would be available without an extra action, and a user
+who expects automatic sharing may find the private default inconvenient.
+I still favor explicit sharing because an accidental disclosure cannot be
+reversed just by changing the flag later. However, this implementation stores
+visibility intent only: `GET /watchlist/<user_id>` returns every entry and
+there is no authentication or owner/public-view distinction in the starter.
+`public=False` does **not** make the data inaccessible. Enforced privacy needs
+authenticated ownership and a filtered public view in a separate change.
+Changing a Python default also does not update existing rows; an existing
+database would need a deliberate migration and user-facing policy.
 
 ## Comment 5 — Sort order
 
