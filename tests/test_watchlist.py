@@ -1,8 +1,10 @@
 """Watchlist service tests, following the collection's isolated database pattern."""
 
 from datetime import datetime, timedelta, timezone
+from uuid import UUID
 
 import pytest
+from sqlalchemy import String
 from sqlalchemy.exc import IntegrityError
 
 from app import create_app, db
@@ -312,3 +314,49 @@ def test_remove_endpoint_returns_200_then_404(app, sample_user, sample_film):
     assert client.delete(
         f"/watchlist/{sample_user}/remove", json={"film_id": sample_film}
     ).status_code == 404
+
+
+def test_watchlist_uses_uuid_columns_and_serializes_uuid_ids(
+    app, sample_user, sample_film
+):
+    film_id_type = Film.__table__.c.id.type
+    watchlist_id_type = WatchlistEntry.__table__.c.film_id.type
+    assert isinstance(film_id_type, String)
+    assert isinstance(watchlist_id_type, String)
+    assert film_id_type.length == watchlist_id_type.length == 36
+
+    assert isinstance(sample_film, str)
+    assert str(UUID(sample_film)) == sample_film
+    assert Film.__table__.c.id.type.python_type is str
+    assert WatchlistEntry.__table__.c.film_id.type.python_type is str
+    assert WatchlistEntry.__table__.c.film_id.type.length == 36
+    assert WatchlistEntry.__table__.c.film_id.index is True
+
+    response = app.test_client().post(
+        f"/watchlist/{sample_user}/add", json={"film_id": sample_film}
+    )
+    assert response.status_code == 201
+    assert response.json["film_id"] == sample_film
+    assert str(UUID(response.json["id"])) == response.json["id"]
+
+
+@pytest.mark.parametrize("film_id", [1, None, [], {}, "", "not-a-uuid"])
+@pytest.mark.parametrize("action,method", [("add", "post"), ("remove", "delete")])
+def test_endpoints_reject_invalid_uuid_ids(app, sample_user, film_id, action, method):
+    response = getattr(app.test_client(), method)(
+        f"/watchlist/{sample_user}/{action}", json={"film_id": film_id}
+    )
+    assert response.status_code == 400
+    assert response.json == {"error": "film_id must be a UUID string"}
+
+
+def test_endpoints_canonicalize_uuid_strings(app, sample_user, sample_film):
+    client = app.test_client()
+    response = client.post(
+        f"/watchlist/{sample_user}/add", json={"film_id": sample_film.upper()}
+    )
+    assert response.status_code == 201
+    assert response.json["film_id"] == sample_film
+    assert client.delete(
+        f"/watchlist/{sample_user}/remove", json={"film_id": sample_film.upper()}
+    ).status_code == 200
