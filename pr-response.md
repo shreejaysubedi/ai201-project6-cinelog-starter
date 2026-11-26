@@ -32,9 +32,16 @@ deduplication key is per user.
 
 ## Comment 3 — Missing test
 
-**What I did:** Pending.
+**What I did:** Added `tests/test_watchlist.py` using the collection tests'
+isolated in-memory SQLite app, committed user/film fixtures, application
+contexts, and `pytest.raises` pattern. The requested missing-film test passes
+the valid but absent UUID `00000000-0000-0000-0000-000000000000`, expects
+`FilmNotFoundError`, and verifies that no entry was inserted. Added happy-path
+and duplicate tests as required by `CONTRIBUTING.md` for a new service.
 
-**How I verified:** Pending.
+**How I verified:** Ran the watchlist tests with the existing collection suite.
+The failure case checks the service's domain exception rather than accepting
+a database error or an unrelated exception as a passing result.
 
 ## Comment 4 — Default visibility
 
