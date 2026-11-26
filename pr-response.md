@@ -103,6 +103,15 @@ including equal timestamps; it is not just a promise in the PR description.
 
 ## Stretch Features
 
+### Additional edge case
+
+The extra test `test_same_film_can_belong_to_different_users` checks that
+deduplication is scoped to a user's list, not to the catalog film globally.
+This is useful for a community app: two people should both be able to save
+*Paddington 2*. Each list must return only its own entry. Additional tests
+cover ordering, timestamp ties, database uniqueness, visibility defaults and
+validation, removal, and HTTP status codes.
+
 ### Remove a saved film
 
 Added `remove_from_watchlist(user_id, film_id)` and the matching DELETE
