@@ -1,5 +1,7 @@
 # PR Response Doc — CineLog Watchlist Feature
 
+Source review: [CodePath's original watchlist PR](https://github.com/codepath/ai201-project6-cinelog-starter/pull/1).
+
 Review source: [CodePath's original watchlist PR #1](https://github.com/codepath/ai201-project6-cinelog-starter/pull/1).
 All work is on `feature/watchlist`, rebased onto the fork's `main`.
 
@@ -181,7 +183,7 @@ The screenshot shows actual command output from `git log --oneline` on
 ancestry check, and zero merge commits. The screenshot is captured before
 the final documentation commit that adds the image itself.
 
-![Screenshot of rewritten conventional commits with no merge commits](docs/commit-history.png)
+![Screenshot of rewritten conventional commits with no merge commits](docs/commit-history.jpg)
 
 Verification: **52 tests passed** using `.venv/bin/python -m pytest tests/ -q`.
 A separate live HTTP smoke test against `python app.py` passed the
