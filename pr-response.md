@@ -72,11 +72,26 @@ database would need a deliberate migration and user-facing policy.
 
 ## Comment 5 — Sort order
 
-**My position:** Pending.
+**My position:** Adopt date-added descending as the default. Break equal
+timestamps by title, then film ID, to keep results deterministic.
 
-**Reasoning:** Pending.
+**Reasoning:** CineLog's watchlist is a queue of intentions rather than the
+catalog returned by `/films/`. A user who just saved a recommendation should
+find it at the top when opening the queue, even if its title begins with Z.
+`get_collection()` already returns recent additions first, so this keeps the
+two personal lists consistent while leaving the catalog's alphabetical
+browsing behavior intact. Title is only a tie-breaker; it cannot displace a
+more recent entry.
 
-**Engagement with reviewer's point:** Pending.
+**Engagement with reviewer's point:** I agree with the maintainer's specific
+point that people often return to something saved recently. Alphabetical
+order is better for locating a known title in a long list, and newest-first
+does not tell someone which older film they should watch next. Those are
+real tradeoffs, but neither justifies keeping an unexplained alphabetical
+default for this save-for-later workflow. A future explicit `sort=title`
+option or search could serve title lookup; manual ranking would be a separate
+product feature. The current decision is implemented and covered by tests,
+including equal timestamps; it is not just a promise in the PR description.
 
 ## Comment 6 — Rebase
 
