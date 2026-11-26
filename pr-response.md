@@ -95,11 +95,29 @@ including equal timestamps; it is not just a promise in the PR description.
 
 ## Comment 6 — Rebase
 
-**What conflicted:** Pending.
+**What conflicted:** The fork initially contained only `main`, so I fetched
+CodePath's original `feature/watchlist` branch before making changes. After
+Comments 1–5 and the stretch changes passed their tests, I ran `git fetch
+origin` and `git rebase origin/main`. Git stopped while replaying the starter
+watchlist commit: `models.py` had `WatchlistEntry.film_id` as an indexed
+integer on the feature branch, while main's UUID refactor (`57ec3f9`) had
+changed it to `db.String(36)` without that index.
 
-**How I resolved it:** Pending.
+**How I resolved it:** Kept main's UUID column type and foreign key to
+`film.id`, retained the feature's `index=True`, staged `models.py`, and ran
+`git rebase --continue`. The remaining commits replayed successfully. After
+the rebase I made a separate UUID fix commit: clarified the model declaration,
+updated the add/remove service arguments and JSON examples to UUID strings,
+and made both write endpoints validate and canonicalize UUID strings.
+Malformed IDs (including legacy integers) return 400, while well-formed but
+absent UUIDs return the domain-specific 404. Tests create films using the
+model's generated UUIDs, with no integer casts or hardcoded integer IDs.
 
-**How I verified no conflict remains:** Pending.
+**How I verified no conflict remains:** Ran the full collection and watchlist
+suite after rebasing, checked that main is an ancestor, scanned for conflict
+markers and obsolete integer-ID references in watchlist source, and checked
+that `git rev-list --merges origin/main..HEAD` is empty. The final UUID tests
+also check the SQLAlchemy column type and the add/get/remove JSON round trip.
 
 ## Stretch Features
 

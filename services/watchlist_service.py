@@ -23,7 +23,7 @@ def add_to_watchlist(user_id, film_id, public=False):
 
     Args:
         user_id (str): UUID of the user.
-        film_id (int): ID of the film. (Note: integer — pre-refactor)
+        film_id (str): UUID of the film.
         public (bool): Visibility intent; defaults to private metadata.
 
     Returns:
@@ -56,7 +56,7 @@ def remove_from_watchlist(user_id, film_id):
 
     Args:
         user_id (str): UUID of the user.
-        film_id (int): ID of the film before the UUID rebase.
+        film_id (str): UUID of the film.
 
     Raises:
         NotInWatchlistError: If the user has not saved this film.

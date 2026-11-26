@@ -1,8 +1,10 @@
 """
-routes/watchlist.py — CineLog (feature/watchlist branch)
+routes/watchlist/watchlist.py — CineLog
 
 Endpoints for the watchlist feature.
 """
+
+from uuid import UUID
 
 from flask import Blueprint, jsonify, request
 from services.watchlist_service import (
@@ -29,11 +31,16 @@ def add_film(user_id):
     """
     POST /watchlist/<user_id>/add
 
-    Body: { "film_id": <int>, "public": false } (public optional)
+    Body: { "film_id": "<uuid>", "public": false } (public optional)
     """
     data = request.get_json(silent=True)
     if not isinstance(data, dict) or "film_id" not in data:
         return jsonify({"error": "film_id is required"}), 400
+
+    try:
+        film_id = str(UUID(data["film_id"]))
+    except (ValueError, TypeError, AttributeError):
+        return jsonify({"error": "film_id must be a UUID string"}), 400
 
     public = data.get("public", False)
     if not isinstance(public, bool):
@@ -41,7 +48,7 @@ def add_film(user_id):
 
     try:
         entry = add_to_watchlist(
-            user_id=user_id, film_id=data["film_id"], public=public
+            user_id=user_id, film_id=film_id, public=public
         )
         return jsonify(entry.to_dict()), 201
     except FilmNotFoundError as e:
@@ -52,13 +59,18 @@ def add_film(user_id):
 
 @watchlist_bp.route("/<user_id>/remove", methods=["DELETE"])
 def remove_film(user_id):
-    """DELETE /watchlist/<user_id>/remove with a film_id JSON body."""
+    """DELETE /watchlist/<user_id>/remove with {"film_id": "<uuid>"}."""
     data = request.get_json(silent=True)
     if not isinstance(data, dict) or "film_id" not in data:
         return jsonify({"error": "film_id is required"}), 400
 
     try:
-        remove_from_watchlist(user_id=user_id, film_id=data["film_id"])
+        film_id = str(UUID(data["film_id"]))
+    except (ValueError, TypeError, AttributeError):
+        return jsonify({"error": "film_id must be a UUID string"}), 400
+
+    try:
+        remove_from_watchlist(user_id=user_id, film_id=film_id)
         return jsonify({"message": "Removed from watchlist"}), 200
     except NotInWatchlistError as e:
         return jsonify({"error": str(e)}), 404
