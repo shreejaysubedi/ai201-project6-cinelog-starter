@@ -103,6 +103,15 @@ including equal timestamps; it is not just a promise in the PR description.
 
 ## Stretch Features
 
+### Remove a saved film
+
+Added `remove_from_watchlist(user_id, film_id)` and the matching DELETE
+endpoint. Following `remove_from_collection()`, it selects the user/film pair,
+raises `NotInWatchlistError` if absent, deletes and commits the matching entry,
+and returns `True`. The endpoint returns 200 on success or 404 if absent.
+Tests cover success, nonexistent IDs, a repeated removal, re-adding after
+removal, and retaining another user's entry for the same film.
+
 ### Explicit visibility
 
 `add_to_watchlist(user_id, film_id, public=False)` accepts a visibility flag,
