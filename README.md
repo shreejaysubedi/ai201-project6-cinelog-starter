@@ -56,6 +56,22 @@ ai201-project6-cinelog-starter/
 | POST | `/collection/<user_id>/add` | Add a film to the collection |
 | DELETE | `/collection/<user_id>/remove` | Remove a film from the collection |
 
+### Watchlist
+
+- `GET /watchlist/<user_id>` lists saved films newest first, with `date_added`
+  and `public` metadata. Equal timestamps sort by title, then film UUID.
+- `POST /watchlist/<user_id>/add` accepts
+  `{"film_id": "<uuid>", "public": false}`. Visibility is optional and defaults
+  to `false`. Returns 201 on success, 409 for a duplicate, 404 for an absent
+  film, or 400 for invalid input.
+- `DELETE /watchlist/<user_id>/remove` accepts `{"film_id": "<uuid>"}`.
+  Returns 200 on removal or 404 when that user has not saved the film.
+
+Visibility is metadata in this starter: routes do not authenticate callers,
+and GET returns every entry. A false flag does not enforce private access.
+See [pr-response.md](pr-response.md) for all six review responses, design
+tradeoffs, the UUID rebase, manual testing steps, and the commit screenshot.
+
 ---
 
 ## Data Models

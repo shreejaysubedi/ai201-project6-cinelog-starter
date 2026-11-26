@@ -1,9 +1,30 @@
 # PR Response Doc — CineLog Watchlist Feature
 
+Review source: [CodePath's original watchlist PR #1](https://github.com/codepath/ai201-project6-cinelog-starter/pull/1).
+All work is on `feature/watchlist`, rebased onto the fork's `main`.
+
 ## AI Usage
 
-In progress; the final entry will describe Codex's implementation, verification,
-documentation, and Git assistance accurately.
+I asked OpenAI Codex to complete this assignment in the forked repository.
+It read the models, collection service, tests, contribution guide, assignment,
+and all six comments on the original PR. It implemented the changes and tests,
+ran the test suite and live HTTP checks, resolved the real rebase conflict,
+rewrote the history, and drafted this document and PR description.
+
+The arguments for Comments 4 and 5 are also AI-assisted: I did not supply
+independently written drafts for a devil's-advocate review. Codex proposed
+private visibility metadata and newest-first ordering using this repository's
+save-for-later workflow and existing collection behavior. Its review of the
+tradeoffs added the distinction between visibility metadata and enforced
+privacy, the cost to community discovery, and the loss of alphabetical lookup.
+These choices and the response text should be personally reviewed before
+submission; this section does not claim the reasoning was written without AI.
+
+For the requested history check, Codex inspected `git log --oneline` for
+conventional prefixes and bundled changes. It identified the starter's
+nonconventional message and split the inherited blueprint/lookup changes and
+the ignore-file/response-document setup into separate logical commits. The
+final log was checked against `CONTRIBUTING.md` and for merge commits.
 
 ## Comment 1 — Rename
 
@@ -97,8 +118,8 @@ including equal timestamps; it is not just a promise in the PR description.
 
 **What conflicted:** The fork initially contained only `main`, so I fetched
 CodePath's original `feature/watchlist` branch before making changes. After
-Comments 1–5 and the stretch changes passed their tests, I ran `git fetch
-origin` and `git rebase origin/main`. Git stopped while replaying the starter
+Comments 1–5 and the stretch changes passed their tests, I ran
+`git fetch origin` and `git rebase origin/main`. Git stopped while replaying the starter
 watchlist commit: `models.py` had `WatchlistEntry.film_id` as an indexed
 integer on the feature branch, while main's UUID refactor (`57ec3f9`) had
 changed it to `db.String(36)` without that index.
@@ -150,8 +171,137 @@ records visibility intent; the limitations in Comment 4 still apply.
 
 ## Commit History
 
-Pending final interactive rebase and screenshot.
+After the UUID rebase, I used `git rebase -i origin/main` to reword the
+starter's nonconventional commit, separate bundled changes, and improve the
+removal commit's wording. Rename, deduplication, visibility, sorting, tests,
+and the post-rebase UUID update remain distinct changes.
+
+The screenshot shows actual command output from `git log --oneline` on
+`feature/watchlist` after rewriting, together with the branch name, main's
+ancestry check, and zero merge commits. The screenshot is captured before
+the final documentation commit that adds the image itself.
+
+![Screenshot of rewritten conventional commits with no merge commits](docs/commit-history.png)
+
+Verification: **52 tests passed** using `.venv/bin/python -m pytest tests/ -q`.
+A separate live HTTP smoke test against `python app.py` passed the
+add/get/remove flow, private default, public opt-in, newest-first ordering,
+and 201/400/404/409 responses. The smoke test removed its saved entries.
 
 ## PR Description
 
-Pending final verification.
+### What the feature does
+
+Adds a watchlist for films a user wants to watch later, separate from the
+collection of films they have already watched. Users can add films by UUID,
+retrieve their saved films and metadata, and remove saved films. Duplicate
+adds return 409, and a well-formed UUID for a missing film returns 404.
+
+- `GET /watchlist/<user_id>` returns film dictionaries with `date_added` and `public`.
+- `POST /watchlist/<user_id>/add` accepts `{"film_id": "<uuid>", "public": false}`;
+  `public` is optional. Success returns 201 with the new entry.
+- `DELETE /watchlist/<user_id>/remove` accepts `{"film_id": "<uuid>"}`;
+  success returns 200, and an absent saved entry returns 404.
+- Missing/malformed film IDs or a nonboolean `public` value return JSON errors with 400.
+
+### Design decisions
+
+**Visibility:** New entries default to `public=False` because saving an
+unwatched film expresses personal interest rather than an intentional
+recommendation to the community. Callers can opt in per entry with
+`public=True`. This reduces automatic community discovery, but avoids
+silently choosing sharing for users. The flag is currently metadata only:
+the starter has no authentication and the GET route returns all entries.
+This PR does not enforce private access or change existing rows.
+
+**Ordering:** Lists return newest additions first, matching `get_collection()`
+and the maintainer's point that people return to recent saves. Title and
+film UUID provide deterministic tie-breakers when timestamps match.
+Alphabetical lookup is less convenient; an optional title sort or search
+could address that separately.
+
+### How to test manually
+
+1. Set up and seed a local database in the repository root:
+
+   ```bash
+   python3 -m venv .venv
+   source .venv/bin/activate
+   python -m pip install -r requirements.txt
+   python seed.py
+   python app.py
+   ```
+
+   Use a fresh development database for the UUID schema and unique constraint.
+   `db.create_all()` does not migrate an older database's columns or constraints.
+   The API runs at `http://127.0.0.1:5000`; `/` returning 404 is expected.
+
+2. Open a second terminal in the repository and load demo IDs:
+
+   ```bash
+   source .venv/bin/activate
+   cinelog_user_id=$(python -c 'from app import create_app; from models import User; app=create_app(); ctx=app.app_context(); ctx.push(); print(User.query.filter_by(username="demo").one().id)')
+   cinelog_alien_id=$(python -c 'from app import create_app; from models import Film; app=create_app(); ctx=app.app_context(); ctx.push(); print(Film.query.filter_by(title="Alien").one().id)')
+   cinelog_spirited_id=$(python -c 'from app import create_app; from models import Film; app=create_app(); ctx=app.app_context(); ctx.push(); print(Film.query.filter_by(title="Spirited Away").one().id)')
+   cinelog_base="http://127.0.0.1:5000/watchlist/$cinelog_user_id"
+   curl -sS "$cinelog_base"
+   ```
+
+   Expect `[]` for a fresh watchlist.
+
+3. Save *Alien* with the default visibility, then *Spirited Away* explicitly public:
+
+   ```bash
+   curl -i -X POST "$cinelog_base/add" -H 'Content-Type: application/json' \
+     -d "{\"film_id\":\"$cinelog_alien_id\"}"
+   curl -i -X POST "$cinelog_base/add" -H 'Content-Type: application/json' \
+     -d "{\"film_id\":\"$cinelog_spirited_id\",\"public\":true}"
+   curl -sS "$cinelog_base"
+   ```
+
+   Both POSTs return 201. *Alien* has `public: false`; *Spirited Away* has
+   `public: true`. GET returns *Spirited Away* before *Alien*, demonstrating
+   recency over alphabetical order, with UUID IDs and `date_added` metadata.
+
+4. Check duplicate, missing, and invalid input handling:
+
+   ```bash
+   curl -i -X POST "$cinelog_base/add" -H 'Content-Type: application/json' \
+     -d "{\"film_id\":\"$cinelog_alien_id\"}"
+   curl -i -X POST "$cinelog_base/add" -H 'Content-Type: application/json' \
+     -d '{"film_id":"00000000-0000-0000-0000-000000000000"}'
+   curl -i -X POST "$cinelog_base/add" -H 'Content-Type: application/json' -d '{}'
+   curl -i -X POST "$cinelog_base/add" -H 'Content-Type: application/json' -d '{"film_id":1}'
+   curl -i -X POST "$cinelog_base/add" -H 'Content-Type: application/json' \
+     -d "{\"film_id\":\"$cinelog_alien_id\",\"public\":\"false\"}"
+   ```
+
+   Expect 409, 404, 400, 400, and 400, respectively. GET still returns only
+   two entries, and the rejected duplicate does not change *Alien*'s visibility.
+
+5. Remove *Alien*, then repeat the DELETE:
+
+   ```bash
+   curl -i -X DELETE "$cinelog_base/remove" -H 'Content-Type: application/json' \
+     -d "{\"film_id\":\"$cinelog_alien_id\"}"
+   curl -i -X DELETE "$cinelog_base/remove" -H 'Content-Type: application/json' \
+     -d "{\"film_id\":\"$cinelog_alien_id\"}"
+   curl -sS "$cinelog_base"
+   ```
+
+   Expect 200 with `{"message":"Removed from watchlist"}`, then 404. The GET
+   result contains only *Spirited Away*. It is possible to add *Alien* again.
+
+6. Run the full suite and history checks:
+
+   ```bash
+   python -m pytest tests/ -q
+   git merge-base --is-ancestor origin/main HEAD
+   git rev-list --count --merges origin/main..HEAD
+   git log --oneline
+   ```
+
+   Expect **52 passed**, ancestry exit status 0, a merge count of **0**, and
+   conventional commit messages including separate rename, deduplication,
+   test, and UUID-fix commits. The automated suite also covers removal,
+   per-user deduplication, timestamp ties, and explicit visibility values.
