@@ -7,9 +7,14 @@ documentation, and Git assistance accurately.
 
 ## Comment 1 — Rename
 
-**What I did:** Pending.
+**What I did:** Renamed `save_to_watchlist()` to `add_to_watchlist()` in the
+service and updated the route's import and call. This matches
+`add_to_collection()` and the project's `verb_to_noun` convention; it changes
+the Python API without changing the HTTP endpoint.
 
-**How I verified:** Pending.
+**How I verified:** Searched the Python source for the old name and confirmed
+there are no remaining call sites. The final service and route tests exercise
+the renamed function.
 
 ## Comment 2 — Deduplication
 
