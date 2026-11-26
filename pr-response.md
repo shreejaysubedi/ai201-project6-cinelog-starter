@@ -103,7 +103,14 @@ including equal timestamps; it is not just a promise in the PR description.
 
 ## Stretch Features
 
-Pending.
+### Explicit visibility
+
+`add_to_watchlist(user_id, film_id, public=False)` accepts a visibility flag,
+and the POST endpoint forwards the optional JSON `public` value. Omission
+keeps the private default. Explicit `true` and `false` are preserved; strings,
+numbers, and null are rejected with HTTP 400 rather than coerced to booleans.
+A duplicate add does not edit the existing entry's visibility. This toggle
+records visibility intent; the limitations in Comment 4 still apply.
 
 ## Commit History
 
