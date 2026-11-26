@@ -18,9 +18,17 @@ the renamed function.
 
 ## Comment 2 — Deduplication
 
-**What I did:** Pending.
+**What I did:** Followed `add_to_collection()` by looking up the film first,
+then querying the `(user_id, film_id)` pair before inserting. An existing
+entry raises `AlreadyInWatchlistError`, which the route translates to HTTP 409.
+The route also translates `FilmNotFoundError` to HTTP 404 instead of leaking
+an unhandled exception. A matching database unique constraint protects the
+same per-user invariant. The same film can still be saved by different users.
 
-**How I verified:** Pending.
+**How I verified:** Service and endpoint tests attempt the same add twice,
+assert the expected exception/409 response, and check that exactly one entry
+remains. A separate case adds the film for a second user to check that the
+deduplication key is per user.
 
 ## Comment 3 — Missing test
 
